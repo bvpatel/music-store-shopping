@@ -4,6 +4,8 @@
 <jsp:useBean id="now" class="java.util.Date" />
 
 <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+<meta name="_csrf" content="${_csrf.token}"/>
+<meta name="_csrf_header" content="${_csrf.headerName}"/>
 
     <div class="container" style="margin-left: 0%">
         <div class="page-header">
@@ -85,7 +87,61 @@
                         <br><br>
 
                         <button class="btn btn-default" name="_eventId_backToCollectCustomerInfo">Back</button>
-                        <input type="submit" value="Submit Order" class="btn btn-default" name="_eventId_orderConfirmed">
+                        <form commandName="chargeRequest" class="btn btn-default"  method='POST' id='checkout-form' name="_eventId_orderConfirmed">
+                            <input type="hidden"  name="${_csrf.parameterName}"   value="${_csrf.token}"/>
+                            <input type="hidden" name="_flowExecutionKey">
+                            <button id="payment" class="btn btn-default" name="_eventId_orderConfirmed" data-key=${payment.stripePublicKey} data-amount=${payment.amount}
+                                data-currency=${payment.currency} data-name='Music Store' data-description='Music Store Checkout for Amount: $${payment.amount/100}'
+                                data-image='<c:url value="/img/stripelogo.png" />' data-locale='auto' data-zip-code='false' >Payment</button>
+                        </form>
+                        <script src="https://checkout.stripe.com/v2/checkout.js"></script>
+                        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js"></script>
+                        <script>
+                                $(document).ready(function() {
+                                    $('#payment').on('click', function(event) {
+                                        event.preventDefault();
+                                        var $button = $(this),
+                                        $form = $button.parents('form');
+                                        $form.commandName = "chargeRequest";
+                                        var opts = $.extend({}, $button.data(), {
+                                            token: function(result) {
+                                                var csrfToken = $("meta[name='_csrf']").attr("content");
+                                                result.description = $button.data().description;
+                                                result.amount = parseInt($button.data().amount);
+                                                console.log($button.data());
+                                                console.log(result);
+                                                    fetch("/payment/charge", {
+                                                      method: "POST",
+                                                      headers: {"Content-Type": "application/json", "X-CSRF-TOKEN": csrfToken},
+                                                      body: JSON.stringify(result)
+                                                    })
+                                                    .then(response => {
+                                                      if (!response.ok)
+                                                        throw response;
+                                                      resp = response.clone().json();
+                                                      return resp;
+                                                      })
+                                                   .then(output => {
+                                                     if(output.status.localeCompare("succeeded") == 0)
+                                                        $form.append($('<input>').attr({ type: 'hidden', name: '_eventId_orderConfirmed', value: result.id })).submit();
+                                                     $form.append($('<input>').attr({ type: 'hidden', name: '_eventId_paymentFailed', value: result.id })).submit();
+                                                   })
+                                                   .catch(err => {
+                                                     console.log("Purchase failed:", err);
+                                                     $form.append($('<input>').attr({ type: 'hidden', name: '_eventId_paymentFailed', value: result.id })).submit();
+                                                   })
+                                            }
+                                        });
+
+                                        StripeCheckout.open(opts);
+                                        event.preventDefault();
+                                    });
+                                    window.addEventListener('popstate', function() {
+                                      handler.close();
+                                    });
+                                });
+                         </script>
+
                         <button class="btn btn-default" name="_eventId_cancel">Cancel</button>
                     </div>
                 </form:form>

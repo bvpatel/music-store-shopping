@@ -8,7 +8,8 @@
     <var name="shippingAddress" class="com.ravi.musicstore.model.ShippingAddress" />
     <var name="shippingAddresses" class="com.ravi.musicstore.model.ShippingAddress" />
     <var name="customerOrderShippingAddress" class="com.ravi.musicstore.model.CustomerOrderShippingAddress" />
-    <var name="payment" class="com.ravi.musicstore.model.CustomerOrderShippingAddress" />
+    <var name="payment" class="com.ravi.musicstore.model.PaymentRequest" />
+    <var name="chargeResponse" class="com.ravi.musicstore.model.ChargeResponse" />
 
     <action-state id="addCartToOrder">
         <evaluate expression="cartServiceImpl.validate(externalContext.globalSessionMap.cartId_)" result="cart" />
@@ -22,7 +23,7 @@
     </action-state>
 
     <view-state id="collectCustomerInfo" view="collectCustomerInfo.jsp" model="customerOrderShippingAddress">
-        <transition on="customerInfoCollected" to="orderConfirmation" />
+        <transition on="customerInfoCollected" to="stripePayment" />
         <transition on="goToAddNewAddress" to="addNewAddress" />
     </view-state>
     
@@ -37,11 +38,20 @@
         <transition to="findAllshippingAddress" />
     </action-state>
 
+    <action-state id="stripePayment">
+        <evaluate expression="stripeServiceImpl.checkout(payment, cart)"  result="payment"/>
+        <transition to="orderConfirmation" />
+    </action-state>
 
-    <view-state id="orderConfirmation" view="orderConfirmation.jsp">
-        <transition on="orderConfirmed" to="createCustomerOrder" history="discard"/>
+    <view-state id="orderConfirmation" view="orderConfirmation.jsp" model="chargeResponse">
+        <transition on="orderConfirmed" to="createCustomerOrder"  history="discard"/>
+        <transition on="paymentFailed" to="paymentFailed"/>
         <transition on="backToCollectCustomerInfo" to="collectCustomerInfo" history="discard"/>
     </view-state>
+<!--
+
+    <view-state id="stripeCharge" view="externalRedirect:contextRelative:/customer/charge"/>
+
 
     <view-state id="paymentRedirect" view="externalRedirect:contextRelative:/customer/payment/#{cart.getCartId()}"/>
     <view-state id="paymentRedirectService" view="externalRedirect:#{paymentController.pay(order, cart)}"/>
@@ -50,6 +60,7 @@
         <transition to="createCustomerOrder" />
     </action-state>
 
+-->
 
 
     <action-state id="createCustomerOrder">
@@ -62,6 +73,9 @@
         <transition to="endState" history="discard"/>
     </view-state>
 
+    <view-state id="paymentFailed">
+        <transition to="endState" history="discard"/>
+    </view-state>
     <end-state id="endState" />
 
     <view-state id="InvalidCartWarning">

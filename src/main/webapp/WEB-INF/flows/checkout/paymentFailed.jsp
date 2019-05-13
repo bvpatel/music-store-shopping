@@ -5,8 +5,8 @@
 		<div class="col-md-5 col-md-offset-3"><br>
 		   	<div class="panel panel-default text-center">
 		   		<div class="panel-body">
-		            <h3>Your payment of ${order.orderTotalPrice} has been successfully processed. Thank you.</h3>
-				    <hr>
+		            <h3>Your payment of ${cart.grandTotal} has been failed. Please order again.</h3>
+					<hr>
 		            <a href="/" class="btn btn-default">OK</a>
 		   		</div>
 		   	</div>

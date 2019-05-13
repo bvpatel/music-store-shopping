@@ -37,7 +37,7 @@ public class CustomerServiceImpl implements CustomerService {
     		Cart cart = new Cart();
     		Role role = new Role();
         	role.setEmail(customer.getEmail());
-        	role.setAuthority("ROLE_UNAUTH");
+        	role.setAuthority("ROLE_USER");
         	role.setCustomer(customer);
         	// create customer first
         	customerRepository.save(customer);
